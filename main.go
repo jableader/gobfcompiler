@@ -65,7 +65,10 @@ func compile(f []byte, strBf bool) {
   }
 
   assembler, out := asm.New()
-  go parse.Compile(program.New(assembler), ast)
+  go func() {
+    parse.Compile(program.New(assembler), ast)
+    close(out)
+  }()
 
   for node := range out {
     if strBf {

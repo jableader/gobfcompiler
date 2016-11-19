@@ -24,7 +24,7 @@ func New(asm Assembler) parse.Program {
 		mem: &memory{},
 		asm: asm,
 	}
-	prog.sc.prog = &prog
+	prog.EnterScope()
 
 	return &prog
 }
