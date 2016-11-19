@@ -1,0 +1,5 @@
+$blah = 5;
+$blah = 'A';
+$hello = $blah;
+$hello, $blah = $hello;
++$hello, -$blah = _$hello;

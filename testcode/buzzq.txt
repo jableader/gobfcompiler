@@ -1,0 +1,40 @@
+def $isSameReversed($x, $y) {
+	# Using 2(10X + Y) + 2 = 10Y + X
+	# 20X + 2Y + 2 = 10 Y + X
+	# 19X + 2 = 8Y
+	var $ten, $lhs, $rhs, $temp, $result;
+
+	+$eight = 8;
+	while _$eight {
+		+$lhs, +$temp = _$x;
+		+$lhs, +$x = _$temp;
+
+		+$rhs = $y;
+	}
+
+	# Currently, LHS = 2*8*X. RHS = 8*Y
+	# RHS is good, need to finish off LHS
+	+$temp, +$lhs = _$x;
+	+$x, +$lhs = _$temp;
+	+$lhs = 2;
+
+	while _$lhs {
+		-$rhs = 1;
+	}
+
+	$result = '0';
+	if _$rhs {
+		+$result = 1;
+	}
+
+	print $result;
+}
+
+var $y, $x;
+$x = 9;
+while _$x {
+	$y = 9;
+	while _$y {
+		$isSameReversed($x, $y);
+	}
+}

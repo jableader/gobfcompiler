@@ -1,0 +1,9 @@
+var $a, $b, $c;
+print $a, $b, $c;
+
+while _$a { }
+if $b { }
+
+def $c($a, $b) {
+	
+}

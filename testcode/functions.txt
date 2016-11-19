@@ -1,0 +1,9 @@
+$blah();
+$blah($hello);
+$blah($hello, $helloAgain);
+
+def $blah($one, $two) {
+  while _$one {
+    +$two = 1;
+  }
+}

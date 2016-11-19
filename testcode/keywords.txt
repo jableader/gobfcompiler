@@ -1,0 +1,6 @@
+if _$blah {
+  while $blah {
+    +$blah = 'A';
+    print $blah;
+  }
+}
