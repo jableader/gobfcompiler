@@ -1,6 +1,7 @@
 package program
 
 import (
+	"fmt"
 	"parse"
 	"errors"
 )
@@ -80,18 +81,18 @@ func (prog *program) MoveTo(pt parse.Pointer) {
 }
 
 func (prog *program) Add(pt parse.Pointer, n int) {
-	if n > 0 {
+	if n != 0 {
 		prog.MoveTo(pt)
 		prog.asm.Add(n)
 	}
 }
 
-func (prog *program) Err(msg string, expr parse.Expr) {
-	prog.asm.Err(msg, expr)
+func (prog *program) Err(expr parse.Expr, msg string, args... interface{}) {
+	prog.asm.Err(fmt.Sprintf(msg, args...), expr)
 }
 
 type memory [100]bool
-func (m memory) malloc(near int) int {
+func (m *memory) malloc(near int) int {
 	for i := 0; i < len(m); i++ {
 		if !m[i] {
 			m[i] = true
@@ -102,7 +103,7 @@ func (m memory) malloc(near int) int {
 	panic("Memory is full!")
 }
 
-func (m memory) free(p int) {
+func (m *memory) free(p int) {
 	m[p] = false
 }
 
@@ -113,7 +114,7 @@ type scope struct {
 }
 
 func (s *scope) get(name string) (parse.Pointer, bool) {
-	for sc := s; sc != nil; sc = s.parent {
+	for sc := s; sc != nil; sc = sc.parent {
 		pt, wasFound := sc.pts[name]
 		if wasFound {
 			return pt, true
@@ -130,7 +131,12 @@ func (s *scope) create(name *string, near int) (parse.Pointer, error) {
 		}
 	}
 
-	return parse.Pointer{s.prog.mem.malloc(near), name}, nil
+	pt := parse.Pointer{s.prog.mem.malloc(near), name}
+	if name != nil {
+		s.pts[*name] = pt
+	}
+
+	return pt, nil
 }
 
 func (s *scope) destroy(pt parse.Pointer) {

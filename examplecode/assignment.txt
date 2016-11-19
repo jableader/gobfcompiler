@@ -1,4 +1,5 @@
 var $blah, $hello;
++$blah = 5;
 $blah = 5;
 $blah = 'A';
 $hello = $blah;

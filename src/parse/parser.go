@@ -154,7 +154,11 @@ func parseAssignmentRhs(p *parser) Expr {
 		case tokChar:
 			return Lit { Val: int(tok.Value[0]) }
 		case tokIdent:
-			return Ident { Id: tok.Value }
+			ident := asIdent(tok.Value)
+			if ident.Op != None && ident.Op != Floor {
+				p.unexpected(tok)
+			}
+			return ident
 		default:
 			p.unexpected(tok)
 			return nil

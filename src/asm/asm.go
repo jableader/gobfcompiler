@@ -67,7 +67,7 @@ func (b bfAdd) ToBF() string {
 	if b.num > 0 {
 		return strings.Repeat("+", b.num)
 	} else {
-		return strings.Repeat("-", b.num)
+		return strings.Repeat("-", -b.num)
 	}
 }
 func (b bfAdd) String() string {
