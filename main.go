@@ -2,31 +2,41 @@ package main;
 
 import (
   "parse"
+  "program"
   "fmt"
+  "asm"
   "io/ioutil"
-  "os"
   "strings"
+  "flag"
 )
 
 func main() {
-  f, err := ioutil.ReadFile(os.Args[len(os.Args) - 1])
+  lexPt := flag.Bool("lex", false, "Only lex the file into tokens. Don't parse.")
+  parsePt := flag.Bool("parse", false, "Only lex & parse the file into an AST. Don't compile.")
+  strBfPt := flag.Bool("str", false, "Show as BF descriptors.")
+
+  flag.Parse()
+  tail := flag.Args()
+
+  f, err := ioutil.ReadFile(tail[0])
   if err != nil {
     fmt.Printf("File Error: %v", err.Error())
   }
 
-  switch os.Args[1] {
-    case "lex": lexOnly(f)
-    default: compile(f)
+  switch {
+  case *lexPt: printLexicons(f)
+  case *parsePt: printAst(f)
+  default: compile(f, *strBfPt)
   }
 }
 
-func lexOnly(f []byte) {
+func printLexicons(f []byte) {
   for tok := range parse.Lex(string(f)) {
     fmt.Printf("%v\n", tok)
   }
 }
 
-func compile(f []byte) {
+func printAst(f []byte) {
   toks := parse.Lex(string(f))
   ast, er := parse.Parse(toks)
 
@@ -43,4 +53,25 @@ func newLineOn(s string, breakChars ...string) string {
   }
 
   return s
+}
+
+func compile(f []byte, strBf bool) {
+  toks := parse.Lex(string(f))
+  ast, er := parse.Parse(toks)
+
+  if er != nil {
+    fmt.Println(er.Error())
+    return
+  }
+
+  assembler, out := asm.New()
+  go parse.Compile(program.New(assembler), ast)
+
+  for node := range out {
+    if strBf {
+      fmt.Printf("%v\n", node.String())
+    } else {
+      fmt.Printf(node.ToBF())
+    }
+  }
 }

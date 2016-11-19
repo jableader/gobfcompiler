@@ -1,98 +1,145 @@
 package parse
 
 import (
-	"errors"
+	"reflect"
+	"fmt"
 )
 
-var ErrorAlreadyExists = errors.New("Pointer already exists")
-
-type program struct {
-	sc *scope
-	mem *memory
-	pc int
-
-	outp chan BfNode
-}
-func (prog *program) enter(ex Expr) *scope {
-	prog.sc = &scope{prog.sc, prog, make(map[string]pointer)}
-	return prog.sc
+type Pointer struct {
+	Loc int
+	Name *string
 }
 
-type pointer struct {
-	loc int
-	name string
+type Program interface {
+	EnterScope()
+	ExitScope()
+
+	OpenLoop()
+	CloseLoop()
+
+	CreatePt(id *string, near int) (Pointer, error)
+	DestroyPt(pt Pointer)
+	GetPt(id string) (Pointer, bool)
+
+	Print(pt *Pointer)
+	MoveTo(pt Pointer)
+	Add(pt Pointer, n int)
+	Err(msg string, expr Expr)
 }
 
-type memory []bool
-func (m memory) malloc(near int) int {
-	for i := 0; i < len(m); i++ {
-		if !m[i] {
-			m[i] = true
-			return i
+type compilable interface {
+	compile(prog Program)
+}
+
+func (expr VarDef) compile(p Program) {
+	for _, ident := range expr.Idents {
+		if _, exists := p.CreatePt(&ident.Id, -1); exists != nil {
+			p.Err("Cannot redefine variable within the same scope", ident)
 		}
 	}
-
-	panic("Memory is full!")
 }
 
-func (m memory) free(p int) {
-	m[p] = false
-}
+func (expr Assignment) compile(p Program) {
+	var rhs Pointer
+	switch val := expr.Rhs.(type) {
+	case Lit:
+		rhs, _ := p.CreatePt(nil, -1)
+		p.Add(rhs, val.Val)
+	case Ident:
+		pt, ok := p.GetPt(val.Id)
+		if !ok {
+			p.Err("RHS of expression is undefined", expr)
+			return
+		}
 
-type scope struct {
-	parent *scope
-	prog *program
-	pts map[string]pointer
-}
+		rhs = pt
+	}
 
-func (s *scope) get(name string) (pointer, bool) {
-	for sc := s; sc != nil; sc = s.parent {
-		pt, wasFound := sc.pts[name]
-		if wasFound {
-			return pt, true
+	p.MoveTo(rhs)
+	p.OpenLoop()
+
+	for _, v := range expr.Lhs {
+		pt, ok := p.GetPt(v.Id)
+		if !ok {
+			p.Err("Identifier is undefined", v)
+		} else {
+			switch v.Op {
+			case Add: p.Add(pt, 1)
+			case Sub: p.Add(pt, -1)
+			default: p.Err("Invalid operator.", v)
+			}
 		}
 	}
-
-	return pointer{}, false
+	p.MoveTo(rhs)
+	p.CloseLoop()
 }
 
-func (s *scope) create(name string, near int) (pointer, error) {
-	if pt, exists := s.pts[name]; exists {
-		return pt, ErrorAlreadyExists
+func (expr PrintStmt) compile(p Program) {
+	for _, v := range expr.Idents {
+		if v.Op != None {
+			p.Err("Unexpected operator in print statement", v)
+		}
+
+		pt, ok := p.GetPt(v.Id)
+		if !ok {
+			p.Err("Variable is undefined", v)
+		} else {
+			p.Print(&pt)
+		}
+	}
+}
+
+func (expr *WhileStmt) compile(p Program) {
+	pt, subjectExists := p.GetPt(expr.Subject.Id)
+	if subjectExists {
+		p.MoveTo(pt)
+	}	else {
+		p.Err("Subject of loop is undefined", expr.Subject)
 	}
 
-	return pointer{s.prog.mem.malloc(near), name}, nil
+
+	p.OpenLoop()
+	defer p.CloseLoop()
+
+	p.EnterScope()
+	defer p.ExitScope()
+
+	expr.Body.compile(p)
+
+	if subjectExists {
+		switch expr.Subject.Op {
+		case Add: p.Add(pt, 1)
+		case Sub, Floor: p.Add(pt, -1)
+		}
+
+		p.MoveTo(pt)
+	}
 }
 
-func (s *scope) destroy(p pointer) {
-	s.prog.mem.free(p.loc)
-	delete(s.pts, p.name)
+func (expr FuncDec) compile(p Program) {
+	p.Err("Not implemented", expr)
 }
 
-func compile(prog *program, stmts StmtCollection) {
+func (expr SyntaxError) compile(p Program) {
+	p.Err(expr.String(), expr)
+}
+
+func (expr Stmt) compile(p Program) {
+	val, ok := expr.Expr.(compilable)
+	if !ok {
+		p.Err(fmt.Sprintf("%v is not compilable", reflect.TypeOf(expr.Expr)), expr)
+		return
+	}
+
+	val.compile(p)
+}
+
+func (stmts StmtCollection) compile(p Program) {
 	for _, stmt := range stmts {
-		switch s := stmt.Expr.(type) {
-			case Stmt:
-			case Ident:
-			case Lit:
-			case Assignment:
-			case VarDef:
-			case PrintStmt:
-			case IfStmt:
-			case WhileStmt:
-			case FuncDec:
-			case FuncCall:
-			case SyntaxError:
-
-		}
+		stmt.compile(p)
 	}
 }
 
-func Compile(stmts StmtCollection) chan BfNode {
-	prog := program {
-		outp: make(chan BfNode),
-	}
-
-	go compile(&prog, stmts)
-	return prog.outp
+func Compile(p Program, stmts StmtCollection) {
+	stmts.compile(p)
 }

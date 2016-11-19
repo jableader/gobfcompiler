@@ -113,6 +113,10 @@ type SyntaxError struct {
 	Message string
 }
 
-func (s SyntaxError) Error() string {
+func (s SyntaxError) String() string {
 	return fmt.Sprintf("Syntax Error at %d. %s", s.Token.LineNumber(), s.Message)
+}
+
+func (s SyntaxError) Error() string {
+	return s.String()
 }
