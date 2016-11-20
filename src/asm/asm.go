@@ -173,12 +173,17 @@ type bfComment struct {
 }
 
 func (b bfComment) ToBF() string {
-	s := b.s
-	for _, ch := range strings.Split("+-<>[].,", "") {
-		s = strings.Replace(s, ch, "_", -1)
-	}
+	// Sanitizing Using Similar Unicode Characters
+	s := strings.Replace(b.s, "+", "∔", -1)
+	s = strings.Replace(s, "-", "‒", -1)
+	s = strings.Replace(s, "[", "〔", -1)
+	s = strings.Replace(s, "]", "〕", -1)
+	s = strings.Replace(s, ">", "ᐳ", -1)
+	s = strings.Replace(s, "<", "ᐸ", -1)
+	s = strings.Replace(s, ".", "․", -1)
+	s = strings.Replace(s, ",", "‚", -1)
 
-	return fmt.Sprintf("  %v\n", s)
+	return fmt.Sprintf("\n# %v\n", s)
 }
 func (b bfComment) String() string {
 	return b.s
