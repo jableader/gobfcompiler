@@ -1,8 +1,8 @@
 package scope_test
 
 import (
-	"testing"
 	"scope"
+	"testing"
 )
 
 func TestScopeDefineGetUndefineGet(t *testing.T) {

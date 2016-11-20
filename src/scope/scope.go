@@ -3,18 +3,18 @@ package scope
 import "errors"
 
 type Variable struct {
-	Name *string
+	Name  *string
 	Value interface{}
 }
 
 type Scope struct {
 	parent *Scope
-	vars []Variable
+	vars   []Variable
 }
 
 var (
 	ErrAlreadyDefined error = errors.New("Variable is already defined")
-	ErrDoesNotExist error = errors.New("Variable does not exist at this scope")
+	ErrDoesNotExist   error = errors.New("Variable does not exist at this scope")
 
 	VarUndefined Variable = Variable{}
 )
@@ -51,8 +51,8 @@ func (s *Scope) Get(id string) (Variable, bool) {
 func (s *Scope) Undefine(v Variable) error {
 	for i, value := range s.vars {
 		if value == v {
-			s.vars[i] = s.vars[len(s.vars) - 1]
-			s.vars = s.vars[:len(s.vars) - 1]
+			s.vars[i] = s.vars[len(s.vars)-1]
+			s.vars = s.vars[:len(s.vars)-1]
 			return nil
 		}
 	}

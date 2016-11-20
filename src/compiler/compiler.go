@@ -1,21 +1,21 @@
 package compiler
 
 import (
-	"reflect"
-	"memory"
-	"scope"
 	"asm"
+	"memory"
 	"parse"
+	"reflect"
+	"scope"
 	"sort"
 )
 
 type program struct {
-	sc *scope.Scope
+	sc  *scope.Scope
 	mem *memory.Memory
 	asm asm.Assembler
 }
 
-func (p *program) GetPt(id parse.Ident) (asm.Pointer, bool){
+func (p *program) GetPt(id parse.Ident) (asm.Pointer, bool) {
 	variable, ok := p.sc.Get(id.Id)
 	if !ok {
 		p.asm.Err(id, "%v is not defined", id.Id)
@@ -59,21 +59,22 @@ type ptIdentWrapper struct {
 	pt asm.Pointer
 }
 type byPt []ptIdentWrapper
+
 func (s byPt) Len() int {
-    return len(s)
+	return len(s)
 }
 func (s byPt) Swap(i, j int) {
-    s[i], s[j] = s[j], s[i]
+	s[i], s[j] = s[j], s[i]
 }
 func (s byPt) Less(i, j int) bool {
-    return s[i].pt < s[j].pt
+	return s[i].pt < s[j].pt
 }
 
 func getAndSort(p *program, idents []parse.Ident) []ptIdentWrapper {
 	res := make([]ptIdentWrapper, len(idents))
 	for i, id := range idents {
 		pt, _ := p.GetPt(id)
-		res[i] = ptIdentWrapper { id, pt }
+		res[i] = ptIdentWrapper{id, pt}
 	}
 
 	sort.Sort(byPt(res))
@@ -81,6 +82,8 @@ func getAndSort(p *program, idents []parse.Ident) []ptIdentWrapper {
 }
 
 func compileAssignment(p *program, expr parse.Assignment) {
+	p.asm.Comment(expr.String())
+
 	var rhs asm.Pointer
 	switch val := expr.Rhs.(type) {
 	case parse.Lit:
@@ -104,14 +107,16 @@ func compileAssignment(p *program, expr parse.Assignment) {
 
 	for _, v := range lhs {
 		switch v.id.Op {
-			case parse.Add, parse.None: p.asm.Add(v.pt, 1)
-			case parse.Sub: p.asm.Add(v.pt, -1)
-			default: p.asm.Err(v.id, "Invalid operator")
+		case parse.Add, parse.None:
+			p.asm.Add(v.pt, 1)
+		case parse.Sub:
+			p.asm.Add(v.pt, -1)
+		default:
+			p.asm.Err(v.id, "Invalid operator")
 		}
 	}
 
 	p.asm.CloseLoop()
-	p.asm.Comment(expr.String())
 }
 
 func compilePrintStmt(p *program, expr parse.PrintStmt) {
@@ -139,8 +144,10 @@ func compileWhileStmt(p *program, expr parse.WhileStmt) {
 
 	if subjectExists {
 		switch expr.Subject.Op {
-		case parse.Add: p.asm.Add(pt, 1)
-		case parse.Sub, parse.Floor: p.asm.Add(pt, -1)
+		case parse.Add:
+			p.asm.Add(pt, 1)
+		case parse.Sub, parse.Floor:
+			p.asm.Add(pt, -1)
 		}
 	}
 }
@@ -155,15 +162,24 @@ func compileSyntaxError(p *program, expr parse.SyntaxError) {
 
 func compileStmt(p *program, expr parse.Stmt) {
 	switch val := expr.Expr.(type) {
-	case parse.VarDef: compileVarDef(p, val)
-	case parse.Assignment: compileAssignment(p, val)
-	case parse.PrintStmt: compilePrintStmt(p, val)
-	case parse.WhileStmt: compileWhileStmt(p, val)
-	case parse.FuncDec: compileFuncDec(p, val)
-	case parse.SyntaxError: compileSyntaxError(p, val)
-	case parse.Stmt: compileStmt(p, val)
-	case parse.StmtCollection: compileStmtCollection(p, val)
-	default: p.asm.Err(expr, "%v is not compilable", reflect.TypeOf(expr.Expr))
+	case parse.VarDef:
+		compileVarDef(p, val)
+	case parse.Assignment:
+		compileAssignment(p, val)
+	case parse.PrintStmt:
+		compilePrintStmt(p, val)
+	case parse.WhileStmt:
+		compileWhileStmt(p, val)
+	case parse.FuncDec:
+		compileFuncDec(p, val)
+	case parse.SyntaxError:
+		compileSyntaxError(p, val)
+	case parse.Stmt:
+		compileStmt(p, val)
+	case parse.StmtCollection:
+		compileStmtCollection(p, val)
+	default:
+		p.asm.Err(expr, "%v is not compilable", reflect.TypeOf(expr.Expr))
 	}
 }
 

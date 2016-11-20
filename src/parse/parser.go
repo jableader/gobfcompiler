@@ -2,15 +2,15 @@ package parse
 
 import (
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 type parser struct {
-	toks chan Token
-	buf [3]Token
-	bufIndex int
-	errors [10]string
+	toks       chan Token
+	buf        [3]Token
+	bufIndex   int
+	errors     [10]string
 	errorIndex int
 }
 
@@ -18,7 +18,7 @@ func (p *parser) next() Token {
 	if p.bufIndex == 0 {
 		p.buf[2] = p.buf[1]
 		p.buf[1] = p.buf[0]
-		p.buf[0] = <- p.toks
+		p.buf[0] = <-p.toks
 	} else {
 		p.bufIndex--
 	}
@@ -28,7 +28,7 @@ func (p *parser) next() Token {
 
 func (p *parser) backup() {
 	p.bufIndex++
-	if (p.bufIndex >= len(p.buf)) {
+	if p.bufIndex >= len(p.buf) {
 		panic("Backup exceeded buffer size")
 	}
 }
@@ -75,7 +75,7 @@ func Parse(tokens chan Token) (stmts StmtCollection, er error) {
 		}
 	}()
 
-	stmts = parseStmts(&parser { toks: tokens }, tokEOF);
+	stmts = parseStmts(&parser{toks: tokens}, tokEOF)
 	return stmts, er
 }
 
@@ -90,7 +90,7 @@ func parseStmts(p *parser, endToken TokenType) StmtCollection {
 }
 
 func parseStmt(p *parser) Stmt {
-	return Stmt { Expr: parseExprStatement(p) };
+	return Stmt{Expr: parseExprStatement(p)}
 }
 
 func parseExprStatement(p *parser) Expr {
@@ -118,13 +118,13 @@ func parseFuncCallOrAssignment(p *parser) Expr {
 	p.backup() // Now at the start of the line
 
 	switch nextTok.Type {
-		case tokOpenParen:
-			return parseFuncCall(p)
-		case tokIdent, tokEquals:
-			return parseAssignment(p)
-		default:
-			p.unexpected(nextTok)
-			return nil
+	case tokOpenParen:
+		return parseFuncCall(p)
+	case tokIdent, tokEquals:
+		return parseAssignment(p)
+	default:
+		p.unexpected(nextTok)
+		return nil
 	}
 }
 
@@ -135,7 +135,7 @@ func parseFuncCall(p *parser) Expr {
 	args := parseIdentifierList(p, tokCloseParen)
 	p.accept(tokSemicolon)
 
-	return FuncCall { Func: ident, Args: args }
+	return FuncCall{Func: ident, Args: args}
 }
 
 func parseAssignment(p *parser) Expr {
@@ -143,25 +143,25 @@ func parseAssignment(p *parser) Expr {
 	rhs := parseAssignmentRhs(p)
 	p.accept(tokSemicolon)
 
-	return Assignment { Lhs: lhs, Rhs: rhs }
+	return Assignment{Lhs: lhs, Rhs: rhs}
 }
 
 func parseAssignmentRhs(p *parser) Expr {
 	switch tok := p.next(); tok.Type {
-		case tokNum:
-			c, _ := strconv.Atoi(tok.Value) // Validated by the lexer already
-			return Lit { Val: c }
-		case tokChar:
-			return Lit { Val: int(tok.Value[0]) }
-		case tokIdent:
-			ident := asIdent(tok.Value)
-			if ident.Op != None && ident.Op != Floor {
-				p.unexpected(tok)
-			}
-			return ident
-		default:
+	case tokNum:
+		c, _ := strconv.Atoi(tok.Value) // Validated by the lexer already
+		return Lit{Val: c}
+	case tokChar:
+		return Lit{Val: int(tok.Value[0])}
+	case tokIdent:
+		ident := asIdent(tok.Value)
+		if ident.Op != None && ident.Op != Floor {
 			p.unexpected(tok)
-			return nil
+		}
+		return ident
+	default:
+		p.unexpected(tok)
+		return nil
 	}
 }
 
@@ -170,7 +170,7 @@ func parseIfStmt(p *parser) Expr {
 	p.accept(tokOpenBrace)
 	body := parseStmts(p, tokCloseBrace)
 
-	return IfStmt { Subject: subject, Body: body }
+	return IfStmt{Subject: subject, Body: body}
 }
 
 func parseWhileStmt(p *parser) Expr {
@@ -178,11 +178,11 @@ func parseWhileStmt(p *parser) Expr {
 	p.accept(tokOpenBrace)
 	body := parseStmts(p, tokCloseBrace)
 
-	return WhileStmt { Subject: subject, Body: body }
+	return WhileStmt{Subject: subject, Body: body}
 }
 
 func parseFuncDef(p *parser) Expr {
-	funcName := parseIdent(p);
+	funcName := parseIdent(p)
 	p.accept(tokOpenParen)
 
 	args := parseIdentifierList(p, tokCloseParen)
@@ -190,15 +190,15 @@ func parseFuncDef(p *parser) Expr {
 
 	body := parseStmts(p, tokCloseBrace)
 
-	return FuncDec { Name: funcName, Args: args, Body: body }
+	return FuncDec{Name: funcName, Args: args, Body: body}
 }
 
 func parseVarDef(p *parser) Expr {
-	return VarDef { Idents: parseIdentifierList(p, tokSemicolon) }
+	return VarDef{Idents: parseIdentifierList(p, tokSemicolon)}
 }
 
 func parsePrintStmt(p *parser) Expr {
-	return PrintStmt { Idents: parseIdentifierList(p, tokSemicolon) }
+	return PrintStmt{Idents: parseIdentifierList(p, tokSemicolon)}
 }
 
 func parseIdentifierList(p *parser, endToken TokenType) []Ident {
@@ -211,7 +211,7 @@ func parseIdentifierList(p *parser, endToken TokenType) []Ident {
 		args = append(args, asIdent(tok.Value))
 	}
 
-	return args;
+	return args
 }
 
 func parseIdent(p *parser) Ident {
@@ -220,18 +220,22 @@ func parseIdent(p *parser) Ident {
 
 func asIdent(value string) Ident {
 	if len(value) == 0 {
-		return Ident {}
+		return Ident{}
 	}
 
-	return Ident { Op: getOp(value), Id: trimOp(value) }
+	return Ident{Op: getOp(value), Id: trimOp(value)}
 }
 
 func getOp(identifier string) IdentifierOp {
 	switch identifier[0] {
-		case '_': return Floor
-		case '+': return Add
-		case '-': return Sub
-		default: return None
+	case '_':
+		return Floor
+	case '+':
+		return Add
+	case '-':
+		return Sub
+	default:
+		return None
 	}
 }
 

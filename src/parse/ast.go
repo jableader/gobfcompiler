@@ -11,11 +11,13 @@ type Expr interface {
 type Stmt struct {
 	Expr Expr
 }
+
 func (s Stmt) String() string {
 	return s.Expr.String() + ";"
 }
 
 type StmtCollection []Stmt
+
 func (s StmtCollection) String() string {
 	strs := make([]string, len(s))
 	for i, v := range s {
@@ -26,6 +28,7 @@ func (s StmtCollection) String() string {
 }
 
 type IdentifierOp int
+
 const (
 	None IdentifierOp = iota
 	Add
@@ -37,18 +40,24 @@ type Ident struct {
 	Op IdentifierOp
 	Id string
 }
+
 func (i Ident) String() string {
 	switch i.Op {
-		case Add: return "+" + i.Id
-		case Sub: return "-" + i.Id
-		case Floor: return "_" + i.Id
-		default: return i.Id
+	case Add:
+		return "+" + i.Id
+	case Sub:
+		return "-" + i.Id
+	case Floor:
+		return "_" + i.Id
+	default:
+		return i.Id
 	}
 }
 
 type Lit struct {
 	Val int
 }
+
 func (l Lit) String() string {
 	return fmt.Sprintf("%v", l.Val)
 }
@@ -57,6 +66,7 @@ type Assignment struct {
 	Lhs []Ident
 	Rhs Expr
 }
+
 func (a Assignment) String() string {
 	return fmt.Sprintf("%v = %v", a.Lhs, a.Rhs)
 }
@@ -64,6 +74,7 @@ func (a Assignment) String() string {
 type VarDef struct {
 	Idents []Ident
 }
+
 func (v VarDef) String() string {
 	return "var " + fmt.Sprintf("%v", v.Idents)
 }
@@ -71,22 +82,25 @@ func (v VarDef) String() string {
 type PrintStmt struct {
 	Idents []Ident
 }
+
 func (v PrintStmt) String() string {
 	return fmt.Sprintf("print %v", v.Idents)
 }
 
 type IfStmt struct {
 	Subject Ident
-	Body StmtCollection
+	Body    StmtCollection
 }
+
 func (i IfStmt) String() string {
 	return fmt.Sprintf("if %v { %v }", i.Subject, i.Body)
 }
 
 type WhileStmt struct {
 	Subject Ident
-	Body StmtCollection
+	Body    StmtCollection
 }
+
 func (w WhileStmt) String() string {
 	return fmt.Sprintf("while %v { %v }", w.Subject, w.Body)
 }
@@ -96,6 +110,7 @@ type FuncDec struct {
 	Args []Ident
 	Body StmtCollection
 }
+
 func (w FuncDec) String() string {
 	return fmt.Sprintf("def %v(%v) { %v }", w.Name, w.Args, w.Body)
 }
@@ -104,12 +119,13 @@ type FuncCall struct {
 	Func Ident
 	Args []Ident
 }
+
 func (f FuncCall) String() string {
-	return fmt.Sprintf("%v(%v)", f.Func, f.Args )
+	return fmt.Sprintf("%v(%v)", f.Func, f.Args)
 }
 
 type SyntaxError struct {
-	Token Token
+	Token   Token
 	Message string
 }
 
