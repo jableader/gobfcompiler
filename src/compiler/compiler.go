@@ -6,6 +6,7 @@ import (
 	"scope"
 	"asm"
 	"parse"
+	"sort"
 )
 
 type program struct {
@@ -53,6 +54,32 @@ func compileVarDef(p *program, expr parse.VarDef) {
 	}
 }
 
+type ptIdentWrapper struct {
+	id parse.Ident
+	pt asm.Pointer
+}
+type byPt []ptIdentWrapper
+func (s byPt) Len() int {
+    return len(s)
+}
+func (s byPt) Swap(i, j int) {
+    s[i], s[j] = s[j], s[i]
+}
+func (s byPt) Less(i, j int) bool {
+    return s[i].pt < s[j].pt
+}
+
+func getAndSort(p *program, idents []parse.Ident) []ptIdentWrapper {
+	res := make([]ptIdentWrapper, len(idents))
+	for i, id := range idents {
+		pt, _ := p.GetPt(id)
+		res[i] = ptIdentWrapper { id, pt }
+	}
+
+	sort.Sort(byPt(res))
+	return res
+}
+
 func compileAssignment(p *program, expr parse.Assignment) {
 	var rhs asm.Pointer
 	switch val := expr.Rhs.(type) {
@@ -63,11 +90,11 @@ func compileAssignment(p *program, expr parse.Assignment) {
 		rhs, _ = p.GetPt(val)
 	}
 
-	for _, v := range expr.Lhs {
-		if v.Op == parse.None {
-			pt, _ := p.GetPt(v) // Ignoring OK: It's handled below
-			p.asm.OpenLoop(pt)
-			p.asm.Add(pt, -1)
+	lhs := getAndSort(p, expr.Lhs)
+	for _, v := range lhs {
+		if v.id.Op == parse.None {
+			p.asm.OpenLoop(v.pt)
+			p.asm.Add(v.pt, -1)
 			p.asm.CloseLoop()
 		}
 	}
@@ -75,19 +102,16 @@ func compileAssignment(p *program, expr parse.Assignment) {
 	p.asm.OpenLoop(rhs)
 	p.asm.Add(rhs, -1)
 
-	defer p.asm.CloseLoop()
-
-	for _, v := range expr.Lhs {
-		pt, ok := p.GetPt(v)
-		if ok {
-			switch v.Op {
-			case parse.Add, parse.None: p.asm.Add(pt, 1)
-			case parse.Sub: p.asm.Add(pt, -1)
-			default: p.asm.Err(v, "Invalid operator")
-			}
+	for _, v := range lhs {
+		switch v.id.Op {
+			case parse.Add, parse.None: p.asm.Add(v.pt, 1)
+			case parse.Sub: p.asm.Add(v.pt, -1)
+			default: p.asm.Err(v.id, "Invalid operator")
 		}
 	}
 
+	p.asm.CloseLoop()
+	p.asm.Comment(expr.String())
 }
 
 func compilePrintStmt(p *program, expr parse.PrintStmt) {

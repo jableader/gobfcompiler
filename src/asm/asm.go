@@ -21,6 +21,7 @@ type Assembler interface {
 
 	Add(pt Pointer, n int)
 
+	Comment(s string)
 	Err(expr parse.Expr, msg string, args... interface{})
 }
 
@@ -74,6 +75,13 @@ func (a *assembler) Print(pt Pointer) {
 func (a *assembler) Read(pt Pointer) {
 	a.move(pt)
 	a.output <- bfRead{}
+}
+
+func (a *assembler) Comment(s string) {
+	for _, ch := range strings.Split("+-<>[].,", "") {
+		s = strings.Replace(s, ch, "_", -1)
+	}
+	a.output <- bfComment{s}
 }
 
 func (a *assembler) Err(expr parse.Expr, msg string, args... interface{}) {
@@ -155,4 +163,14 @@ func (b bfErr) ToBF() string {
 }
 func (b bfErr) String() string {
 	return fmt.Sprintf("\nCompiler Error: %v, %v\n", b.reason, b.branch)
+}
+
+type bfComment struct {
+	s string
+}
+func (b bfComment) ToBF() string {
+	return fmt.Sprintf("  %v\n", b.s)
+}
+func (b bfComment) String() string {
+	return b.s
 }
