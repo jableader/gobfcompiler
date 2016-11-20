@@ -28,6 +28,9 @@ func (s *Scope) Define(id *string, value interface{}) (Variable, error) {
 		if _, alreadyExists := s.getWithoutParents(*id); alreadyExists {
 			return VarUndefined, ErrAlreadyDefined
 		}
+
+		cpy := *id
+		id = &cpy
 	}
 
 	v := Variable{id, value}

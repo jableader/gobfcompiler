@@ -66,3 +66,14 @@ func TestScopeDifferentLevels(t *testing.T) {
 		t.Error("Couldnt find global after exiting scope")
 	}
 }
+
+func TestScopeNamePointers(t *testing.T) {
+	ids := [2]string{"First", "Second"}
+	sc := scope.New()
+	for _, id := range ids {
+		_, err := sc.Define(&id, 69)
+		if err != nil {
+			t.Errorf("Shouldnt be an issue. %v", err)
+		}
+	}
+}

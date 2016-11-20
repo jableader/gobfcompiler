@@ -6,7 +6,6 @@ import (
 	"scope"
 	"asm"
 	"parse"
-	"fmt"
 )
 
 type program struct {
@@ -22,13 +21,13 @@ func (p *program) GetPt(id parse.Ident) (asm.Pointer, bool){
 		return asm.NullPointer, false
 	}
 
-	pt, ok := variable.Value.(asm.Pointer)
+	pt, ok := variable.Value.(int)
 	if !ok {
 		p.asm.Err(id, "Expected pointer, got %v", reflect.TypeOf(variable.Value))
 		return asm.NullPointer, false
 	}
 
-	return pt, true
+	return asm.Pointer(pt), true
 }
 
 func (p *program) DefPt(id *string, near int) (asm.Pointer, error) {
@@ -46,10 +45,6 @@ func (p *program) ExitScope() {
 	p.sc = p.sc.Exit()
 }
 
-type compilable interface {
-	compile(prog program)
-}
-
 func compileVarDef(p *program, expr parse.VarDef) {
 	for _, ident := range expr.Idents {
 		if _, exists := p.DefPt(&ident.Id, -1); exists != nil {
@@ -62,15 +57,10 @@ func compileAssignment(p *program, expr parse.Assignment) {
 	var rhs asm.Pointer
 	switch val := expr.Rhs.(type) {
 	case parse.Lit:
-		rhs, _ := p.DefPt(nil, -1)
+		rhs, _ = p.DefPt(nil, -1)
 		p.asm.Add(rhs, val.Val)
 	case parse.Ident:
-		pt, ok := p.GetPt(val)
-		if !ok {
-			return
-		}
-
-		rhs = pt
+		rhs, _ = p.GetPt(val)
 	}
 
 	for _, v := range expr.Lhs {
