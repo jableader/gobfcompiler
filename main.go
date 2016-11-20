@@ -2,7 +2,7 @@ package main;
 
 import (
   "parse"
-  "program"
+  "compiler"
   "fmt"
   "asm"
   "io/ioutil"
@@ -66,15 +66,16 @@ func compile(f []byte, strBf bool) {
 
   assembler, out := asm.New()
   go func() {
-    parse.Compile(program.New(assembler), ast)
+    compiler.Compile(assembler, ast)
     close(out)
   }()
 
   for node := range out {
     if strBf {
-      fmt.Printf("%v\n", node.String())
+      fmt.Println(node.String())
     } else {
-      fmt.Printf(node.ToBF())
+      fmt.Printf("%s", node.ToBF())
     }
   }
+  fmt.Println("")
 }

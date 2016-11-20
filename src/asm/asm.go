@@ -4,40 +4,80 @@ import (
 	"fmt"
 	"strings"
 	"parse"
-	"program"
 )
 
-func New() (program.Assembler, chan BfNode) {
-	channel := make(chan BfNode)
-	return assembler { channel }, channel
+type Pointer int
+const (
+	NullPointer Pointer = -1
+	ZeroPointer Pointer = 0
+)
+
+type Assembler interface {
+	Read(pt Pointer)
+	Print(pt Pointer)
+
+	OpenLoop(pt Pointer)
+	CloseLoop()
+
+	Add(pt Pointer, n int)
+
+	Err(expr parse.Expr, msg string, args... interface{})
 }
 
 type assembler struct {
+	loops []Pointer
+	pc Pointer
 	output chan BfNode
 }
 
-func (a assembler) Move(from, to int) {
-	a.output <- bfMov { from, to }
+func New() (Assembler, chan BfNode) {
+	channel := make(chan BfNode)
+
+	return &assembler {
+		loops: make([]Pointer, 0, 10),
+		pc: ZeroPointer,
+		output: channel,
+	}, channel
 }
 
-func (a assembler) Add(n int) {
+func (a *assembler) move(to Pointer) {
+	if a.pc != to {
+		a.output <- bfMov { int(a.pc), int(to) }
+		a.pc = to
+	}
+}
+
+func (a *assembler) Add(pt Pointer, n int) {
+	a.move(pt)
 	a.output <- bfAdd { n }
 }
 
-func (a assembler) StartLoop() {
-	a.output <- bfStartLoop {}
+func (a *assembler) OpenLoop(pt Pointer) {
+	a.loops = append(a.loops, pt)
+	a.move(pt)
+	a.output <- bfStartLoop{}
 }
 
-func (a assembler) EndLoop() {
+func (a *assembler) CloseLoop() {
+	pt := a.loops[len(a.loops) -1]
+	a.move(pt)
 	a.output <- bfEndLoop{}
+
+	a.loops = a.loops[:len(a.loops) - 1]
 }
 
-func (a assembler) Print() {
+func (a *assembler) Print(pt Pointer) {
+	a.move(pt)
 	a.output <- bfPrint{}
 }
 
-func (a assembler) Err(msg string, expr parse.Expr) {
-	a.output <- bfErr {expr, msg}
+func (a *assembler) Read(pt Pointer) {
+	a.move(pt)
+	a.output <- bfRead{}
+}
+
+func (a *assembler) Err(expr parse.Expr, msg string, args... interface{}) {
+	a.output <- bfErr {expr, fmt.Sprintf(msg, args...)}
 }
 
 type BfNode interface {
@@ -98,6 +138,14 @@ func (b bfPrint) String() string {
 	return "PRINT"
 }
 
+type bfRead struct {}
+func (b bfRead) ToBF() string {
+	return ","
+}
+func (b bfRead) String() string {
+	return "READ"
+}
+
 type bfErr struct {
 	branch parse.Expr
 	reason string
@@ -106,5 +154,5 @@ func (b bfErr) ToBF() string {
 	return b.String()
 }
 func (b bfErr) String() string {
-	return fmt.Sprintf("Compiler Error: %v, %v", b.reason, b.branch)
+	return fmt.Sprintf("\nCompiler Error: %v, %v\n", b.reason, b.branch)
 }

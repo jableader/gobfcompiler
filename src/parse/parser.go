@@ -69,9 +69,9 @@ func Parse(tokens chan Token) (stmts StmtCollection, er error) {
 		if recoveredEr := recover(); recoveredEr != nil {
 			if _, ok := recoveredEr.(SyntaxError); ok {
 				er = recoveredEr.(error)
+			} else {
+				panic(recoveredEr)
 			}
-
-			panic(recoveredEr)
 		}
 	}()
 
