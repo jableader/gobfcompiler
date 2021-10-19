@@ -1,5 +1,6 @@
-#bfukt
-####*A silly little language that compiles into a sillier, little one*
+# bfukt
+
+#### *A silly little language that compiles into a sillier, little one*
 
 Have you ever noticed that most the languages that compile to brainfuck dont
 have the same neat little heart that brainfuck does? They're either far too bf
@@ -10,15 +11,15 @@ I have tried to design a language and compiler (this is V2 actually!) that can
 create neat little bf code that looks like it could have been handwritten, but
 is still at a higher level than simple macros.
 
-##To Build the Compiler
+## To Build the Compiler
 Simply run `go build` in the project root. You may also use `go test` to run the
 available tests.
 
-##Usage
+## Usage
 Simply `go build` the project. You have a few command line options such as `-lex`
 to only print the lexicons and `-str` to print an 'assembly-like' view.
 
-##The Language
+## The Language
 The language is dynamically typed, although that said, there is only two types.
 The two types are functions and variables, and they can be used interchangeably
 (first class functions).
@@ -31,10 +32,10 @@ The spec below includes features that are not yet implemented. I will note when
 a feature is not yet ready. You'll find other examples in the /examplecode
 directory.
 
-###Comments
+### Comments
 A line that starts with a `#hash` is a comment
 
-###Declaring a variable
+### Declaring a variable
 Declaring a variable is simple, and all of the following are valid and do what
 you would expect them to. Names are prefixed with a `$`.
 
